@@ -1,12 +1,12 @@
 # Load Packages
-using Ipopt, JuMP, DataFrames
-
+#using Ipopt, JuMP, DataFrames, CSV
+#cd("CGE\\")
 # Read in Data
-data = readtable("Data.csv")
-IntData = readtable("IntData.csv")
+data = CSV.read("Data.csv")
+IntData = CSV.read("IntData.csv")
 
 # Creat JuMP Model
-M = Model(solver = IpoptSolver())
+M = Model(with_optimizer(Ipopt.Optimizer))
 
 
 # PARAMETERS #
@@ -26,9 +26,9 @@ QComProd0 = (PCapital0.*QCapital0)./PComProd0 + (PLabor0.*QLabor0)./PComProd0 + 
                                           # initial commodity production level
 intcoeff = IntInputs0./QComProd0'         # technical coefficients
 elasF  = data[:elasF]                     # elasticity of subsistition between factors in production function
-distF = 1./(1.+((PLabor0/PCapital0)*((QCapital0./QLabor0).^(-1./elasF))))
+distF = 1. ./ (1. .+ ((PLabor0/PCapital0)*((QCapital0./QLabor0).^(-1. /elasF))))
                                           # distribution parameter
-eF = QComProd0 ./ (distF.*QCapital0.^((elasF-1)./elasF)+(1-distF).*QLabor0.^((elasF-1)./elasF)).^(elasF./(elasF-1))
+eF = QComProd0 ./ (distF.*QCapital0.^((elasF.-1)./elasF) +(1 .-distF).*QLabor0.^((elasF.-1)./elasF)).^(elasF./(elasF.-1))
                                           # efficiency parameter in production function
 
 ## Consumption block
@@ -105,4 +105,4 @@ end
 # Model Solver
 
 @NLobjective(M, Max, 0)
-@time solve(M)
+@time optimize!(M)
